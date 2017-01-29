@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 # Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,19 +33,41 @@ class HTTPResponse(object):
         self.body = body
 
 class HTTPClient(object):
-    #def get_host_port(self,url):
+    def get_host_port(self,url):
+        # Example HTTP URL http://[username:password@]hostname[:port]/path/to/resource/resource.html
+        url = url.strip('http://')
+        temp = url.split('/')[0]
+        # split hostname and port
+        if "@" in url:
+            port = temp.split(':')[2]
+            hostname = temp.split('@')[1].split(':')[0]
+        elif len(temp.split(':')) == 2:
+            port =temp.split(':')[1]
+            hostname = temp.split(':')[0]
+        else:
+            port = 80
+            hostname = temp
+
+        print "host: %s" + hostname
+        print "port: %s" + port
+        return host, port
 
     def connect(self, host, port):
         # use sockets!
-        return None
+        clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        clientSocket.connect((host, port))
+        return clientSocket
 
     def get_code(self, data):
-        return None
+        code = int(data.split(' ')[1])
+        return code
 
     def get_headers(self,data):
-        return None
+        headers = data.split('\r\n\r\n')[0]
+        return headers
 
     def get_body(self, data):
+        body = data.split('\r\n\r\n')[1]
         return None
 
     # read everything from the socket
@@ -75,7 +97,7 @@ class HTTPClient(object):
             return self.POST( url, args )
         else:
             return self.GET( url, args )
-    
+
 if __name__ == "__main__":
     client = HTTPClient()
     command = "GET"
@@ -85,4 +107,4 @@ if __name__ == "__main__":
     elif (len(sys.argv) == 3):
         print client.command( sys.argv[2], sys.argv[1] )
     else:
-        print client.command( sys.argv[1] )   
+        print client.command( sys.argv[1] )
