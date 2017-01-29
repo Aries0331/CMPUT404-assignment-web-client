@@ -34,10 +34,10 @@ class HTTPResponse(object):
 
 class HTTPClient(object):
     def get_host_port(self,url):
-        # Example HTTP URL http://[username:password@]hostname[:port]/path/to/resource/resource.html
+        # Example HTTP URL from slides http://[username:password@]hostname[:port]/path/to/resource/resource.html
         url = url.strip('http://')
         temp = url.split('/')[0]
-        # split hostname and port
+        # split hostname, port and path
         if "@" in url:
             port = temp.split(':')[2]
             hostname = temp.split('@')[1].split(':')[0]
@@ -47,10 +47,12 @@ class HTTPClient(object):
         else:
             port = 80
             hostname = temp
+        path = url.split('/',1)[1]
 
         print "host: %s" + hostname
         print "port: %s" + port
-        return host, port
+        print "path: %s" + path
+        return host, port, path
 
     def connect(self, host, port):
         # use sockets!
@@ -68,7 +70,7 @@ class HTTPClient(object):
 
     def get_body(self, data):
         body = data.split('\r\n\r\n')[1]
-        return None
+        return body
 
     # read everything from the socket
     def recvall(self, sock):
@@ -85,11 +87,39 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
+        # reference: https://docs.python.org/2/library/urllib.html#examples
+        if args != None:
+            query = urllib.urlencode(args)
+        host, port, path = self.get_host_port(url)
+        socket = self.connect(post, port)
+        header = "GET %s HTTP/1.1\r\n" % self.path + \
+                "Host: %s:%d" % (self.host, self.port)
+        socket.sendall(header)
+        data = self.recvall(socket)
+        print data
+        code = self.get_code
+        body = self.get_body
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
         body = ""
+        if args != None:
+            query = urllib.urlencode(args)
+            length = len(args)
+        else:
+            length = 0
+        host, port, path = self.get_host_port(url)
+        socket = self.connect(post, port)
+        header = "GET %s HTTP/1.1\r\n" % self.path + \
+                "Host: %s:%d" % (self.host, self.port) + \
+                "Content-Type: application/x-www-form-urlencoded\r\n" + \
+                "Content-Length: %s\r\n\r\n" % length
+        socket.send(header)
+        data = self.recvall(socket)
+        print data
+        code = self.get_code(data)
+        body = self.get_body(data)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
