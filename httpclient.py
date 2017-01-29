@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
+# Copyright 2016 Abram Hindle, Jinzhu Li, https://github.com/tywtyw2002, and https://github.com/treedust
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,23 +36,28 @@ class HTTPClient(object):
     def get_host_port(self,url):
         # Example HTTP URL from slides http://[username:password@]hostname[:port]/path/to/resource/resource.html
         url = url.strip('http://')
+        #print url
         temp = url.split('/')[0]
         # split hostname, port and path
         if "@" in url:
-            port = temp.split(':')[2]
+            port = int(temp.split(':')[2])
             hostname = temp.split('@')[1].split(':')[0]
         elif len(temp.split(':')) == 2:
-            port =temp.split(':')[1]
+            port = int(temp.split(':')[1])
             hostname = temp.split(':')[0]
         else:
             port = 80
             hostname = temp
-        path = url.split('/',1)[1]
+        if len(url.split('/')) >= 2:
+            # missing fisrt '/' causing error
+            path = '/' + url.split('/',1)[1]
+        else:
+            path = '/'
 
-        print "host: %s" + hostname
-        print "port: %s" + port
-        print "path: %s" + path
-        return host, port, path
+        #print "host: " + hostname
+        #print "port: " + str(port)
+        #print "path: " + path
+        return hostname, port, path
 
     def connect(self, host, port):
         # use sockets!
@@ -87,37 +92,44 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
-        # reference: https://docs.python.org/2/library/urllib.html#examples
-        if args != None:
-            query = urllib.urlencode(args)
         host, port, path = self.get_host_port(url)
-        socket = self.connect(post, port)
-        header = "GET %s HTTP/1.1\r\n" % self.path + \
-                "Host: %s:%d" % (self.host, self.port)
+        socket = self.connect(host, port)
+        # first time forgot \r\n cause program cannot stop
+        header = "GET %s HTTP/1.1\r\n" % path + \
+                "Host: %s:%d\r\n" % (host, port) + \
+                "Connection: close\r\n\r\n"
         socket.sendall(header)
         data = self.recvall(socket)
-        print data
-        code = self.get_code
-        body = self.get_body
+        socket.close()
+        #print "--DATA: \r\n" + data
+        print header
+        code = self.get_code(data)
+        body = self.get_body(data)
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
         body = ""
-        if args != None:
+        # reference: https://docs.python.org/2/library/urllib.html#examples
+        if args is not None:
             query = urllib.urlencode(args)
-            length = len(args)
+            length = len(query)
         else:
+            query = ''
             length = 0
         host, port, path = self.get_host_port(url)
-        socket = self.connect(post, port)
-        header = "GET %s HTTP/1.1\r\n" % self.path + \
-                "Host: %s:%d" % (self.host, self.port) + \
+        socket = self.connect(host, port)
+        header = "POST %s HTTP/1.1\r\n" % path + \
+                "Host: %s:%d\r\n" % (host, port) + \
                 "Content-Type: application/x-www-form-urlencoded\r\n" + \
-                "Content-Length: %s\r\n\r\n" % length
-        socket.send(header)
+                "Content-Length: %d\r\n" % length + \
+                "Connection: close\r\n\r\n"
+        # query in the body in POST, without query in body dose not work
+        socket.sendall(header + query + "\r\n")
         data = self.recvall(socket)
-        print data
+        socket.close()
+        #print "--DATA: \r\n" + data
+        print header
         code = self.get_code(data)
         body = self.get_body(data)
         return HTTPResponse(code, body)
