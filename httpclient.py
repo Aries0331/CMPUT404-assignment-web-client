@@ -97,12 +97,14 @@ class HTTPClient(object):
         # first time forgot \r\n cause program cannot stop
         header = "GET %s HTTP/1.1\r\n" % path + \
                 "Host: %s:%d\r\n" % (host, port) + \
+                "User-Agent: httpclient.py\r\n" + \
+                "Accept: */*" + \
                 "Connection: close\r\n\r\n"
         socket.sendall(header)
         data = self.recvall(socket)
         socket.close()
         #print "--DATA: \r\n" + data
-        print header
+        #print header
         code = self.get_code(data)
         body = self.get_body(data)
         return HTTPResponse(code, body)
@@ -110,6 +112,7 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         code = 500
         body = ""
+
         # reference: https://docs.python.org/2/library/urllib.html#examples
         if args is not None:
             query = urllib.urlencode(args)
@@ -121,15 +124,17 @@ class HTTPClient(object):
         socket = self.connect(host, port)
         header = "POST %s HTTP/1.1\r\n" % path + \
                 "Host: %s:%d\r\n" % (host, port) + \
+                "User-Agent: httpclient.py\r\n" + \
                 "Content-Type: application/x-www-form-urlencoded\r\n" + \
                 "Content-Length: %d\r\n" % length + \
+                "Accept: */*" + \
                 "Connection: close\r\n\r\n"
         # query in the body in POST, without query in body dose not work
         socket.sendall(header + query + "\r\n")
         data = self.recvall(socket)
         socket.close()
         #print "--DATA: \r\n" + data
-        print header
+        #print header
         code = self.get_code(data)
         body = self.get_body(data)
         return HTTPResponse(code, body)
