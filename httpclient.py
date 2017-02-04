@@ -98,7 +98,7 @@ class HTTPClient(object):
         header = "GET %s HTTP/1.1\r\n" % path + \
                 "Host: %s:%d\r\n" % (host, port) + \
                 "User-Agent: httpclient.py\r\n" + \
-                "Accept: */*" + \
+                "Accept: */*\r\n" + \
                 "Connection: close\r\n\r\n"
         socket.sendall(header)
         data = self.recvall(socket)
@@ -127,7 +127,7 @@ class HTTPClient(object):
                 "User-Agent: httpclient.py\r\n" + \
                 "Content-Type: application/x-www-form-urlencoded\r\n" + \
                 "Content-Length: %d\r\n" % length + \
-                "Accept: */*" + \
+                "Accept: */*\r\n" + \
                 "Connection: close\r\n\r\n"
         # query in the body in POST, without query in body dose not work
         socket.sendall(header + query + "\r\n")
